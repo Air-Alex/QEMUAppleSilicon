@@ -277,7 +277,7 @@ static void vfio_ram_discard_register_listener(VFIOContainerBase *bcontainer,
 
     ram_discard_listener_init(&vrdl->listener,
                               vfio_ram_discard_notify_populate,
-                              vfio_ram_discard_notify_discard, true);
+                              vfio_ram_discard_notify_discard);
     ram_discard_manager_register_listener(rdm, &vrdl->listener, section);
     QLIST_INSERT_HEAD(&bcontainer->vrdl_list, vrdl, next);
 
