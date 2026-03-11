@@ -1720,7 +1720,7 @@ static bool trans_BLR(DisasContext *s, arg_r *a)
 {
     TCGv_i64 dst = cpu_reg(s, a->rn);
     TCGv_i64 lr = cpu_reg(s, 30);
-    if (dst == lr) {
+    if (a->rn == 30) {
         TCGv_i64 tmp = tcg_temp_new_i64();
         tcg_gen_mov_i64(tmp, dst);
         dst = tmp;
@@ -1786,7 +1786,7 @@ static bool trans_BLRAZ(DisasContext *s, arg_braz *a)
 
     dst = auth_branch_target(s, cpu_reg(s, a->rn), tcg_constant_i64(0), !a->m);
     lr = cpu_reg(s, 30);
-    if (dst == lr) {
+    if (a->rn == 30) {
         TCGv_i64 tmp = tcg_temp_new_i64();
         tcg_gen_mov_i64(tmp, dst);
         dst = tmp;
@@ -1835,7 +1835,7 @@ static bool trans_BLRA(DisasContext *s, arg_bra *a)
     }
     dst = auth_branch_target(s, cpu_reg(s, a->rn), cpu_reg_sp(s, a->rm), !a->m);
     lr = cpu_reg(s, 30);
-    if (dst == lr) {
+    if (a->rn == 30) {
         TCGv_i64 tmp = tcg_temp_new_i64();
         tcg_gen_mov_i64(tmp, dst);
         dst = tmp;
