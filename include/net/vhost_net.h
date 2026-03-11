@@ -42,7 +42,6 @@ void vhost_net_virtqueue_mask(VHostNetState *net, VirtIODevice *dev,
                               int idx, bool mask);
 bool vhost_net_config_pending(VHostNetState *net);
 void vhost_net_config_mask(VHostNetState *net, VirtIODevice *dev, bool mask);
-int vhost_net_notify_migration_done(VHostNetState *net, char* mac_addr);
 VHostNetState *get_vhost_net(NetClientState *nc);
 
 int vhost_net_set_vring_enable(NetClientState *nc, int enable);
