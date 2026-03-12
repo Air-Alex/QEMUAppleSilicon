@@ -12,6 +12,8 @@
 #include "elf.h"
 #include "exec/target_page.h"
 #include "exec/translation-block.h"
+#include "qapi/error.h"
+#include "qemu/error-report.h"
 #include "qemu/timer.h"
 #include "tcg/debuginfo.h"
 #include "tcg/perf.h"
