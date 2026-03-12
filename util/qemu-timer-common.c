@@ -46,6 +46,36 @@ static void __attribute__((constructor)) init_get_clock(void)
     clock_start = get_clock();
 }
 
+#elif defined(__APPLE__)
+
+mach_timebase_info_data_t tb = { 0 };
+
+static uint64_t gcd(uint64_t a, uint64_t b)
+{
+    if (a == 0)
+        return b;
+    if (b == 0)
+        return a;
+    if (a == b)
+        return a;
+    if (a > b)
+        return gcd(a - b, b);
+    return gcd(a, b - a);
+}
+
+static void __attribute__((constructor)) init_get_clock(void)
+{
+#ifdef __aarch64__
+        uint64_t freq;
+    __asm__ volatile("mrs %0, CNTFRQ_EL0" : "=r"(freq));
+    uint64_t g = gcd(1000000000ULL, freq);
+    tb.numer = 1000000000ULL / g;
+    tb.denom = freq / g;
+#else
+    mach_timebase_info(&tb);
+#endif
+}
+
 #else
 
 int use_rt_clock;
@@ -60,4 +90,5 @@ static void __attribute__((constructor)) init_get_clock(void)
     }
     clock_start = get_clock();
 }
+
 #endif
