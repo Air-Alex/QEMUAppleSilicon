@@ -156,14 +156,14 @@ struct AppleMTSPIState {
 #define PATH_STAGE_LINGER_IN_RANGE (6)
 #define PATH_STAGE_OUT_OF_RANGE (7)
 
-static void apple_mt_spi_buf_free(AppleMTSPIBuffer *buf)
+static inline void apple_mt_spi_buf_free(AppleMTSPIBuffer *buf)
 {
     g_free(buf->data);
     *buf = (AppleMTSPIBuffer){ 0 };
 }
 
-static void apple_mt_spi_buf_ensure_capacity(AppleMTSPIBuffer *buf,
-                                             size_t bytes)
+static inline void apple_mt_spi_buf_ensure_capacity(AppleMTSPIBuffer *buf,
+                                                    size_t bytes)
 {
     if ((buf->len + bytes) > buf->capacity) {
         buf->capacity = buf->len + bytes;
@@ -171,16 +171,16 @@ static void apple_mt_spi_buf_ensure_capacity(AppleMTSPIBuffer *buf,
     }
 }
 
-static void apple_mt_spi_buf_set_capacity(AppleMTSPIBuffer *buf,
-                                          size_t capacity)
+static inline void apple_mt_spi_buf_set_capacity(AppleMTSPIBuffer *buf,
+                                                 size_t capacity)
 {
     assert_cmphex(capacity, >=, buf->capacity);
     buf->capacity = capacity;
     buf->data = g_realloc(buf->data, buf->capacity);
 }
 
-static void apple_mt_spi_buf_set_len(AppleMTSPIBuffer *buf, uint8_t val,
-                                     size_t len)
+static inline void apple_mt_spi_buf_set_len(AppleMTSPIBuffer *buf, uint8_t val,
+                                            size_t len)
 {
     assert_cmphex(len, >=, buf->len);
     apple_mt_spi_buf_ensure_capacity(buf, len - buf->len);
@@ -188,61 +188,64 @@ static void apple_mt_spi_buf_set_len(AppleMTSPIBuffer *buf, uint8_t val,
     buf->len = len;
 }
 
-static bool apple_mt_spi_buf_is_empty(const AppleMTSPIBuffer *buf)
+static inline bool apple_mt_spi_buf_is_empty(const AppleMTSPIBuffer *buf)
 {
     return buf->len == 0;
 }
 
-static size_t apple_mt_spi_buf_get_pos(const AppleMTSPIBuffer *buf)
+static inline size_t apple_mt_spi_buf_get_pos(const AppleMTSPIBuffer *buf)
 {
     assert_false(apple_mt_spi_buf_is_empty(buf));
     return buf->len - 1;
 }
 
-static bool apple_mt_spi_buf_is_full(const AppleMTSPIBuffer *buf)
+static inline bool apple_mt_spi_buf_is_full(const AppleMTSPIBuffer *buf)
 {
     return !apple_mt_spi_buf_is_empty(buf) && buf->len == buf->capacity;
 }
 
-static bool apple_mt_spi_buf_pos_at_start(const AppleMTSPIBuffer *buf)
+static inline bool apple_mt_spi_buf_pos_at_start(const AppleMTSPIBuffer *buf)
 {
     return apple_mt_spi_buf_get_pos(buf) == 0;
 }
 
-static bool apple_mt_spi_buf_read_pos_at_end(const AppleMTSPIBuffer *buf)
+static inline bool apple_mt_spi_buf_read_pos_at_end(const AppleMTSPIBuffer *buf)
 {
     return (buf->read_pos + 1) == buf->len;
 }
 
-static void apple_mt_spi_buf_push_byte(AppleMTSPIBuffer *buf, uint8_t val)
+static inline void apple_mt_spi_buf_push_byte(AppleMTSPIBuffer *buf,
+                                              uint8_t val)
 {
     apple_mt_spi_buf_ensure_capacity(buf, sizeof(val));
     buf->data[buf->len] = val;
     buf->len += sizeof(val);
 }
 
-static void apple_mt_spi_buf_push_word(AppleMTSPIBuffer *buf, uint16_t val)
+static inline void apple_mt_spi_buf_push_word(AppleMTSPIBuffer *buf,
+                                              uint16_t val)
 {
     apple_mt_spi_buf_ensure_capacity(buf, sizeof(val));
     stw_le_p(buf->data + buf->len, val);
     buf->len += sizeof(val);
 }
 
-static void apple_mt_spi_buf_push_dword(AppleMTSPIBuffer *buf, uint32_t val)
+static inline void apple_mt_spi_buf_push_dword(AppleMTSPIBuffer *buf,
+                                               uint32_t val)
 {
     apple_mt_spi_buf_ensure_capacity(buf, sizeof(val));
     stl_le_p(buf->data + buf->len, val);
     buf->len += sizeof(val);
 }
 
-static void apple_mt_spi_buf_push_crc16(AppleMTSPIBuffer *buf)
+static inline void apple_mt_spi_buf_push_crc16(AppleMTSPIBuffer *buf)
 {
     assert_false(apple_mt_spi_buf_is_empty(buf));
     apple_mt_spi_buf_push_word(buf, crc16(0, buf->data, buf->len));
 }
 
-static void apple_mt_spi_buf_append(AppleMTSPIBuffer *buf,
-                                    AppleMTSPIBuffer *other_buf)
+static inline void apple_mt_spi_buf_append(AppleMTSPIBuffer *buf,
+                                           AppleMTSPIBuffer *other_buf)
 {
     if (!apple_mt_spi_buf_is_empty(other_buf)) {
         apple_mt_spi_buf_ensure_capacity(buf, other_buf->len);
@@ -252,7 +255,7 @@ static void apple_mt_spi_buf_append(AppleMTSPIBuffer *buf,
     apple_mt_spi_buf_free(other_buf);
 }
 
-static uint8_t apple_mt_spi_buf_pop(AppleMTSPIBuffer *buf)
+static inline uint8_t apple_mt_spi_buf_pop(AppleMTSPIBuffer *buf)
 {
     uint8_t ret;
 
@@ -436,6 +439,7 @@ static void apple_mt_spi_handle_hbpp(AppleMTSPIState *s)
         break;
     case HBPP_PACKET_MEM_READ:
         if (apple_mt_spi_buf_pos_at_start(&s->rx)) {
+            apple_mt_spi_buf_ensure_capacity(&s->pending_hbpp, 2 + 4 + 2);
             apple_mt_spi_push_pending_hbpp_word(s, HBPP_PACKET_ACK_RD_REQ);
             apple_mt_spi_push_pending_hbpp_dword(s, 0x00000000); // value
             apple_mt_spi_push_pending_hbpp_word(s, 0x0000); // crc16 of value
@@ -468,6 +472,7 @@ static void apple_mt_spi_push_ll_hdr(AppleMTSPIBuffer *buf, uint8_t type,
                                      uint16_t payload_remaining,
                                      uint16_t payload_length)
 {
+    apple_mt_spi_buf_ensure_capacity(buf, 8);
     apple_mt_spi_buf_push_byte(buf, type);
     apple_mt_spi_buf_push_byte(buf, interface);
     apple_mt_spi_buf_push_word(buf, payload_off);
@@ -493,7 +498,7 @@ static uint8_t apple_mt_spi_ll_read_payload_byte(AppleMTSPIBuffer *buf,
 {
     assert_false(apple_mt_spi_buf_is_empty(buf));
     assert_cmphex(sizeof(uint32_t) + sizeof(uint64_t) + off + sizeof(uint8_t),
-                    <=, buf->len);
+                  <=, buf->len);
     return buf->data[sizeof(uint32_t) + sizeof(uint64_t) + off];
 }
 
@@ -501,9 +506,8 @@ static uint16_t apple_mt_spi_ll_read_payload_word(AppleMTSPIBuffer *buf,
                                                   size_t off)
 {
     assert_false(apple_mt_spi_buf_is_empty(buf));
-    assert_cmphex(sizeof(uint32_t) + sizeof(uint64_t) + off +
-                        sizeof(uint16_t),
-                    <=, buf->len);
+    assert_cmphex(sizeof(uint32_t) + sizeof(uint64_t) + off + sizeof(uint16_t),
+                  <=, buf->len);
     return lduw_le_p(buf->data + sizeof(uint32_t) + sizeof(uint64_t) + off);
 }
 
@@ -513,6 +517,7 @@ static void apple_mt_spi_push_hid_hdr(AppleMTSPIBuffer *buf, uint8_t type,
                                       uint16_t length_requested,
                                       uint16_t payload_length)
 {
+    apple_mt_spi_buf_ensure_capacity(buf, 8);
     apple_mt_spi_buf_push_byte(buf, type);
     apple_mt_spi_buf_push_byte(buf, report_id);
     apple_mt_spi_buf_push_byte(buf, packet_status);
@@ -527,6 +532,7 @@ static void apple_mt_spi_push_report_hdr(AppleMTSPIBuffer *buf, uint8_t type,
                                          uint8_t frame_number,
                                          uint16_t payload_length)
 {
+    apple_mt_spi_buf_ensure_capacity(buf, 9);
     apple_mt_spi_push_hid_hdr(buf, type, report_id, packet_status, frame_number,
                               0, payload_length + sizeof(report_id));
     apple_mt_spi_buf_push_byte(buf, report_id);
@@ -557,11 +563,13 @@ static void apple_mt_spi_handle_get_feature(AppleMTSPIState *s)
 
     switch (report_id) {
     case HID_REPORT_FAMILY_ID:
+        apple_mt_spi_buf_ensure_capacity(&packet->buf, 9 + 1 + 2);
         apple_mt_spi_push_report_byte(
             &packet->buf, HID_CONTROL_PACKET_SET_OUTPUT_REPORT, report_id,
             HID_PACKET_STATUS_SUCCESS, frame_number, MT_FAMILY_ID);
         break;
     case HID_REPORT_BASIC_DEVICE_INFO:
+        apple_mt_spi_buf_ensure_capacity(&packet->buf, 9 + 5 + 2);
         apple_mt_spi_push_report_hdr(
             &packet->buf, HID_CONTROL_PACKET_SET_OUTPUT_REPORT, report_id,
             HID_PACKET_STATUS_SUCCESS, frame_number, 5);
@@ -571,6 +579,7 @@ static void apple_mt_spi_handle_get_feature(AppleMTSPIState *s)
         apple_mt_spi_buf_push_word(&packet->buf, MT_BCD_VER);
         break;
     case HID_REPORT_SENSOR_SURFACE_DESC:
+        apple_mt_spi_buf_ensure_capacity(&packet->buf, 9 + 16 + 2);
         apple_mt_spi_push_report_hdr(
             &packet->buf, HID_CONTROL_PACKET_SET_OUTPUT_REPORT, report_id,
             HID_PACKET_STATUS_SUCCESS, frame_number, 16);
@@ -584,6 +593,7 @@ static void apple_mt_spi_handle_get_feature(AppleMTSPIState *s)
         apple_mt_spi_buf_push_word(&packet->buf, MT_SENSOR_SURFACE_HEIGHT);
         break;
     case HID_REPORT_SENSOR_REGION_PARAM:
+        apple_mt_spi_buf_ensure_capacity(&packet->buf, 9 + 6 + 2);
         apple_mt_spi_push_report_hdr(
             &packet->buf, HID_CONTROL_PACKET_SET_OUTPUT_REPORT, report_id,
             HID_PACKET_STATUS_SUCCESS, frame_number, 6);
@@ -592,6 +602,7 @@ static void apple_mt_spi_handle_get_feature(AppleMTSPIState *s)
         apple_mt_spi_buf_push_word(&packet->buf, 0x200);
         break;
     case HID_REPORT_SENSOR_REGION_DESC:
+        apple_mt_spi_buf_ensure_capacity(&packet->buf, 9 + 22 + 2);
         apple_mt_spi_push_report_hdr(
             &packet->buf, HID_CONTROL_PACKET_SET_OUTPUT_REPORT, report_id,
             HID_PACKET_STATUS_SUCCESS, frame_number, 22); // 1 + 7*3
@@ -794,6 +805,7 @@ static void apple_mt_spi_send_path_update(AppleMTSPIState *s, uint64_t ts,
     y_delta = s->y - s->prev_y;
 
     packet->type = LL_PACKET_LOSSLESS_OUTPUT;
+    apple_mt_spi_buf_ensure_capacity(&packet->buf, 9 + 27 + 20 + 2);
     apple_mt_spi_push_report_hdr(&packet->buf, HID_TRANSFER_PACKET_OUTPUT,
                                  HID_REPORT_BINARY_PATH_OR_IMAGE,
                                  HID_PACKET_STATUS_SUCCESS, s->frame, 27 + 20);
