@@ -515,7 +515,6 @@ static int alloc_code_gen_buffer_anon(size_t size, int prot,
     region.total_size = size;
     return prot;
 }
-#endif /* WIN32 */
 
 #ifndef CONFIG_TCG_INTERPRETER
 #ifdef CONFIG_POSIX
@@ -668,6 +667,7 @@ static int alloc_code_gen_buffer(size_t size, int splitwx, Error **errp)
 
     return alloc_code_gen_buffer_anon(size, prot, flags, errp);
 }
+#endif /* WIN32 */
 
 /*
  * Initializes region partitioning.
